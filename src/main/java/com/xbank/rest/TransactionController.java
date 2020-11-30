@@ -1,5 +1,6 @@
 package com.xbank.rest;
 
+import com.xbank.config.Constants;
 import com.xbank.domain.Transaction;
 import com.xbank.dto.TransactionDTO;
 import com.xbank.dto.UserDTO;
@@ -7,9 +8,13 @@ import com.xbank.security.AuthoritiesConstants;
 import com.xbank.service.TransactionService;
 import io.github.jhipster.web.util.HeaderUtil;
 import io.github.jhipster.web.util.PaginationUtil;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -33,6 +38,8 @@ public class TransactionController {
     @Value("${clientApp.name}")
     private String applicationName;
 
+    private final Logger log = LoggerFactory.getLogger(UserController.class);
+    
     private final TransactionService transactionService;
 
     public TransactionController(TransactionService transactionService) {
@@ -66,5 +73,14 @@ public class TransactionController {
                 .map(total -> new PageImpl<>(new ArrayList<>(), pageable, total))
                 .map(page -> ResponseEntity.ok().headers(PaginationUtil.generatePaginationHttpHeaders(UriComponentsBuilder.fromHttpRequest(request), page))
                         .body(transactionService.getAllTransactions(pageable)));
+    }
+
+    @DeleteMapping("/{id}")
+    // @PreAuthorize("hasAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+    @ResponseStatus(code = HttpStatus.NO_CONTENT)
+    public Mono<ResponseEntity<Void>> deleteTransaction(@PathVariable Long id) {
+        log.debug("REST request to delete Transaction: {}", id);
+        return transactionService.deleteTransaction(id)
+                .map(it -> ResponseEntity.noContent().headers(HeaderUtil.createAlert( applicationName, "userManagement.deleted", id.toString())).build());
     }
 }

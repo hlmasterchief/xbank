@@ -73,4 +73,11 @@ public class TransactionService {
         this.publisher.publishEvent(new TransactionEvent(eventType, item));
     }
 
+    @Transactional
+    public Mono<Void> deleteTransaction(Long id) {
+        return transactionRepository.findById(id)
+            .flatMap(transaction -> transactionRepository.delete(transaction).thenReturn(transaction))
+            .doOnNext(transaction -> log.debug("Deleted Transaction: {}", transaction))
+            .then();
+    }
 }
