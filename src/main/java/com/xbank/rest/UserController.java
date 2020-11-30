@@ -19,6 +19,14 @@ import com.xbank.service.UserService;
 import io.github.jhipster.web.util.HeaderUtil;
 import io.github.jhipster.web.util.PaginationUtil;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,6 +45,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import javax.validation.Valid;
+
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.Principal;
@@ -332,5 +342,22 @@ public class UserController {
         log.debug("REST request to delete User: {}", login);
         return userService.deleteUser(login)
                 .map(it -> ResponseEntity.noContent().headers(HeaderUtil.createAlert( applicationName, "userManagement.deleted", login)).build());
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<String> login(@Valid @RequestBody ManagedUserVM managedUserVM) throws IOException {
+        CloseableHttpClient client = HttpClients.createDefault();
+        HttpPost httpPost = new HttpPost("http://10.53.122.222:8080/auth/realms/microservice/protocol/openid-connect/token");
+        List<NameValuePair> params = new ArrayList<NameValuePair>();
+        params.add(new BasicNameValuePair("client_id", "service-front"));
+        params.add(new BasicNameValuePair("client_secret", "e47b6233-19aa-42d3-808a-1310299b735e"));
+        params.add(new BasicNameValuePair("username", managedUserVM.getLogin()));
+        params.add(new BasicNameValuePair("password", managedUserVM.getPassword()));
+        params.add(new BasicNameValuePair("grant_type", "password"));
+        httpPost.setEntity(new UrlEncodedFormEntity(params));
+        CloseableHttpResponse response = client.execute(httpPost);
+        client.close();
+        HttpStatus httpStatus = HttpStatus.resolve(response.getStatusLine().getStatusCode());
+        return new ResponseEntity<>(EntityUtils.toString(response.getEntity()), httpStatus);
     }
 }
